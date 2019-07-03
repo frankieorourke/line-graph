@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style> /* set the CSS */
+
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+
+</style>
+<body>
+
+<!-- load the d3.js library -->    	
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+
+//////////////// STARTER CODE LINK ///////////////////
+//  https://bl.ocks.org/d3noob/402dd382a51a4f6eea487f9a35566de0
+
+
+// set the dimensions and margins of the graph
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// parse the date / time
+var parseTime = d3.timeParse("%d-%b-%y");
+
+// set the ranges
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.close); });
+
+// append the svg obgect to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+// Get the data from our json file and preprocess, extract times array and make
+// an array with total throughputs for each time. 
+
+var jsonData = JSON.parse('{"times":["2019-06-01T18:25:43.511Z","2019-06-01T18:30:43.511Z","2019-06-01T18:35:43.511Z"],"throughput_groups":[{"app_name":"WhatsApp","is_local":false,"throughputs":[100,200,150]},{"app_name":"SantaInezApp1","is_local":true,"throughputs":[500,200,750]},{"app_name":"Facebook","is_local":false,"throughputs":[10,200,150]}]}');
+var times = jsonData.times;
+var throughput_groups = jsonData.throughput_groups;
+
+//holds sum of throughputs from each throughput_group
+var throughput_totals = throughput_groups[0].throughputs;
+
+//sum the throughputs
+for(var i = 1; i < jsonData.throughput_groups.length; i++){
+    var th = throughput_groups[i].throughputs;
+    for(var j = 0; j < th.length; j++){
+        throughput_totals[j] = throughput_totals[j] + th[j];
+    }
+}
+
+//data object to use with d3 data binding. 
+var data = {time: times, throughput: throughput_totals};
+console.log(data.time);
+console.log(data.throughput);
+
+
+//DATA BINDING FROM ORIGINAL EXAMPLE....
+
+/*
+d3.json("data.json", function(error, data) {
+  if (error) throw error;
+
+  // format the data
+  data.forEach(function(d) {
+      d.date = parseTime(d.date);
+      d.close = +d.close;
+  });
+
+  // Scale the range of the data
+  x.domain(d3.extent(data, function(d) { return d.date; }));
+  y.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+  // Add the valueline path.
+  svg.append("path")
+      .data([data])
+      .attr("class", "line")
+      .attr("d", valueline);
+
+  // Add the X Axis
+  svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+  // Add the Y Axis
+  svg.append("g")
+      .call(d3.axisLeft(y));
+
+});
+*/
+
+</script>
+</body>
