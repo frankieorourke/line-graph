@@ -19,8 +19,9 @@
 //////////////// STARTER CODE LINK ///////////////////
 //  https://bl.ocks.org/d3noob/402dd382a51a4f6eea487f9a35566de0
 
-// Get the data from our json file and preprocess, extract t array and make
-// an array with total throughputs for each time. 
+
+/////////////////PRE PROCESSING DATA ////////////////////////////
+// extract times array and make an array with throughput sum for each time
 
 var jsonData = JSON.parse('{"t":["2019-06-01T18:25:43.511Z","2019-06-01T18:30:43.511Z","2019-06-01T18:35:43.511Z"],"throughput_groups":[{"app_name":"WhatsApp","is_local":false,"throughputs":[100,200,150]},{"app_name":"SantaInezApp1","is_local":true,"throughputs":[500,200,750]},{"app_name":"Facebook","is_local":false,"throughputs":[10,200,150]}]}');
 var t = jsonData.t;
@@ -36,16 +37,37 @@ for(var i = 1; i < jsonData.throughput_groups.length; i++){
         throughput_totals[j] = throughput_totals[j] + th[j];
     }
 }
-//OUR PREPROCESSED DATA
+//THE PREPROCESSED DATA
 var data = {time: t, throughput: throughput_totals};
 
+
+
+///////////////////////SETTING UP AXIS AND SCALES////////////////
+
+///running into an issue here!!!!!
+// the example parses dates with d3.timeParse function and
+// this is necessary for getting the date strings to function as 
+// objects of time, and be scaled on the axis. However, this is done WITHIN
+// the d3.json (or d3.csv etc) function. and when I use the d3.parseTime 
+// function on our preprocessed data (not within d3.json()) this update to the
+// data is not maintained and thus can't be used in scale context. 
+
+
+console.log("JS DATE PARSE??????") //not really
+console.log(Date.parse(data.time[0]));
 //time parser
 var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
 
-//parse the dates
+//parse the dates (matches what the example has but is not within a d3.json function)
 data.time.forEach(function(d){
+    console.log(d);
     d = parseTime(d);
+    console.log(d);
 });
+
+for(var i = 0; i < data.time.length;i++){
+    console.log(data.time[i]);
+}
 
 //ensure throughputs are numeric
 data.throughput.forEach(function(d){
@@ -65,12 +87,12 @@ var margin = {top: 20, right: 20, bottom: 30, left: 50},
 //x.domain(d3.extent(data, function(d) { return d.time; }));
 //y.domain([0, d3.max(data, function(d) { return d.throughput; })]);
 
-var xDomain = d3.extent(data.time, function(d) {return d.t})
-console.log(xDomain);
 
-var x = d3.scaleTime().domain(xDomain).range([0, width]);
+console.log(data.time[0]);
+console.log(data.time[data.time.length -1]);
+
+var x = d3.scaleTime().domain([data.time[0], data.time[data.time.length -1]]).range([0, width]);
 var y = d3.scaleLinear().domain([0, d3.max(data.throughput)]).range([height, 0]);
-
 
 
 // define the line
@@ -100,9 +122,11 @@ svg.append("path")
       .attr("transform", "translate(0," + height + ")")
       .call(d3.axisBottom(x));
 
-  // Add the Y Axis
+  //Add the Y Axis
   svg.append("g")
-      .call(d3.axisLeft(y));
+      .call(d3.axisLeft(y));      
+
+    
 
 //DATA BINDING FROM ORIGINAL EXAMPLE....
 
@@ -116,8 +140,7 @@ d3.json("data.json", function(error, data) {
       d.close = +d.close;
   });
 
-  // Scale the range of the data
-  x.domain(d3.extent(data, function(d) { return d.date; }));
+
   y.domain([0, d3.max(data, function(d) { return d.close; })]);
 
   // Add the valueline path.
