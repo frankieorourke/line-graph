@@ -4,7 +4,7 @@
 
 
 .line {
-  fill: none;
+  fill: black;
   stroke: steelblue;
   stroke-width: 2px;
 }
@@ -23,8 +23,8 @@
 /////////////////PRE PROCESSING DATA ////////////////////////////
 // extract times array and make an array with throughput sum for each time
 
-var jsonData = JSON.parse('{"t":["2019-06-01T18:25:43.511Z","2019-06-01T18:30:43.511Z","2019-06-01T18:35:43.511Z"],"throughput_groups":[{"app_name":"WhatsApp","is_local":false,"throughputs":[100,200,150]},{"app_name":"SantaInezApp1","is_local":true,"throughputs":[500,200,750]},{"app_name":"Facebook","is_local":false,"throughputs":[10,200,150]}]}');
-var t = jsonData.t;
+var jsonData = JSON.parse('{"times":["2019-05-01T18:25:43.511Z","2019-06-01T18:30:43.511Z","2019-06-01T18:35:43.511Z"],"throughput_groups":[{"app_name":"WhatsApp","is_local":false,"throughputs":[100,200,150]},{"app_name":"SantaInezApp1","is_local":true,"throughputs":[500,200,750]},{"app_name":"Facebook","is_local":false,"throughputs":[10,200,150]}]}');
+var times = jsonData.times;
 var throughput_groups = jsonData.throughput_groups;
 
 //holds sum of throughputs from each throughput_group
@@ -37,39 +37,18 @@ for(var i = 1; i < jsonData.throughput_groups.length; i++){
         throughput_totals[j] = throughput_totals[j] + th[j];
     }
 }
-//THE PREPROCESSED DATA
-var data = {time: t, throughput: throughput_totals};
-
-
-
-///////////////////////SETTING UP AXIS AND SCALES////////////////
-
-///running into an issue here!!!!!
-// the example parses dates with d3.timeParse function and
-// this is necessary for getting the date strings to function as 
-// objects of time, and be scaled on the axis. However, this is done WITHIN
-// the d3.json (or d3.csv etc) function. and when I use the d3.parseTime 
-// function on our preprocessed data (not within d3.json()) this update to the
-// data is not maintained and thus can't be used in scale context. 
-
-
-console.log("JS DATE PARSE??????") //not really
-console.log(Date.parse(data.time[0]));
-//time parser
-var parseTime = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ");
-
-//parse the dates (matches what the example has but is not within a d3.json function)
-data.time.forEach(function(d){
-    console.log(d);
-    d = parseTime(d);
-    console.log(d);
-});
-
-for(var i = 0; i < data.time.length;i++){
-    console.log(data.time[i]);
+var dates = [times.length];
+for(var i = 0; i < times.length; i++){
+    dates[i] = new Date(times[i]);
 }
+//THE PREPROCESSED DATA
+var data = {time: dates, throughput: throughput_totals};
 
-//ensure throughputs are numeric
+// var data2 = [
+//   {time: new Date("2019-05-01T18:25:43.511Z"), throughput: throughput_totals[0]},
+//   {time: new Date("2019-06-01T18:30:43.511Z"), throughput: throughput_totals[1]},
+//   {time: new Date("2019-06-01T18:35:43.511Z"), throughput: throughput_totals[2]}]
+//ensure throughputs are numeric ------------------------SEEMS LIKE THIS IS UNECESSARY
 data.throughput.forEach(function(d){
     d = +d; //the + ensures that this is a numeric value. 
 });
@@ -87,17 +66,11 @@ var margin = {top: 20, right: 20, bottom: 30, left: 50},
 //x.domain(d3.extent(data, function(d) { return d.time; }));
 //y.domain([0, d3.max(data, function(d) { return d.throughput; })]);
 
-
-console.log(data.time[0]);
-console.log(data.time[data.time.length -1]);
-
 var x = d3.scaleTime().domain([data.time[0], data.time[data.time.length -1]]).range([0, width]);
 var y = d3.scaleLinear().domain([0, d3.max(data.throughput)]).range([height, 0]);
 
-
 // define the line
-///////////// UPDATE d.date and d.close to d.time and d.throughput ?? ///////
-var valueline = d3.line()
+var line = d3.line()
     .x(function(d) { return x(d.time); })
     .y(function(d) { return y(d.throughput); });
 
@@ -111,20 +84,25 @@ var svg = d3.select("body").append("svg")
     .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
 
-svg.append("path")
-      .data([data])
-      .attr("class", "line")
-      .attr("d", valueline);
-
-
-  // Add the X Axis
-  svg.append("g")
+// Add the X Axis
+svg.append("g")
       .attr("transform", "translate(0," + height + ")")
       .call(d3.axisBottom(x));
 
-  //Add the Y Axis
-  svg.append("g")
-      .call(d3.axisLeft(y));      
+//Add the Y Axis
+svg.append("g")
+      .call(d3.axisLeft(y)); 
+
+
+
+////MAKE THE PATH!!!
+svg.append("path")
+      .data(data)
+      .attr("class", "line")
+      .attr("d", line);
+
+
+     
 
     
 
